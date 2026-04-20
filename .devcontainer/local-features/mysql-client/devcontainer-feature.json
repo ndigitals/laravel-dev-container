@@ -1,0 +1,11 @@
+{
+    "Id": "mysql-client",
+    "name": "Install the MySQL/MariaDB client",
+		"installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ],
+    "install": {
+        "app": "",
+        "file": "install.sh"
+    }
+}

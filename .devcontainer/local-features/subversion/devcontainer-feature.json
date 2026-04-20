@@ -1,0 +1,11 @@
+{
+    "Id": "subversion",
+    "name": "Install the Subversion CLI",
+		"installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ],
+    "install": {
+        "app": "",
+        "file": "install.sh"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "Id": "php-cli-xdebug",
+    "name": "Configure PHP CLI w/ Xdebug",
+		"installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ],
+    "install": {
+        "app": "",
+        "file": "install.sh"
+    }
+}

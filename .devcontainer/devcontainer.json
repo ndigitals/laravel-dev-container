@@ -1,0 +1,30 @@
+// For format details, https://containers.dev/implementors/json_reference/.
+{
+	"build": {
+		"dockerfile": "./Dockerfile",
+		"context": ".",
+		"args": {
+			"PHP_VERSION": "${localEnv:PHP_VERSION}"
+		}
+	},
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "username": "laravel_php"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "${localEnv:NODE_VERSION}"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/copilot-cli:1": {},
+    "ghcr.io/42atomys/devcontainers-features/redis-cli:1": {},
+    "ghcr.io/jlaundry/devcontainer-features/mssql-odbc-driver:1": {},
+    "ghcr.io/rails/devcontainer/features/postgres-client:1": {},
+    "./local-features/mssql-client": {},
+    "./local-features/mysql-client": {},
+    "./local-features/subversion": {},
+    "./local-features/php-cli-xdebug": {}
+  }
+}
