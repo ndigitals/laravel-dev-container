@@ -1,6 +1,6 @@
 ARG PHP_VERSION=8.3
 
-FROM php:${PHP_VERSION}-fpm-bookworm
+FROM php:${PHP_VERSION}-fpm-trixie
 
 LABEL org.opencontainers.image.url=https://github.com/ndigitals/laravel-dev-container/pkgs/container/laravel-dev-container
 LABEL org.opencontainers.image.documentation=https://github.com/ndigitals/laravel-dev-container/wiki
@@ -17,13 +17,14 @@ WORKDIR /var/www
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV COMPOSER_HOME=/tmp
+ENV DEBIAN_FRONTEND=noninteractive
 
 # install the PHP extensions we need
 RUN set -ex; \
 	\
 	apt-get update; \
 	\
-	apt-get install -y --no-install-recommends libjpeg-dev libpng-dev libwebp-dev libzip-dev libssl-dev libmemcached-dev unzip libmagickwand-dev ghostscript libonig-dev locales sudo rsync libxslt-dev git; \
+	apt-get install -y --no-install-recommends libjpeg-dev libpng-dev libwebp-dev libzip-dev libssl-dev libmemcached-dev unzip libmagickwand-dev ghostscript libonig-dev locales sudo rsync libxslt-dev git gpg; \
 	apt-get upgrade openssl -y; \
 	update-ca-certificates --fresh; \
 	sed -i 's/^# *\(\(ru_RU\|fr_FR\|de_DE\|es_ES\|ja_JP\).UTF-8\)/\1/' /etc/locale.gen; \
