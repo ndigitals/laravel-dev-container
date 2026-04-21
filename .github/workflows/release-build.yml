@@ -1,0 +1,206 @@
+name: Build and Publish Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}
+
+env:
+  PHP_STABLE_VERSION: '8.3'
+  NODE_STABLE_VERSION: '24'
+  REGISTRY: ghcr.io
+  OWNER: ndigitals
+  PACKAGE: laravel-dev-container
+  ACTION_VERSION: 1
+
+jobs:
+  build:
+    name: Build Images
+
+    strategy:
+      fail-fast: false
+      matrix: 
+        PHP_VERSION:
+          - '8.3'
+          - '8.4'
+        NODE_VERSION:
+          - '24'
+        builder:
+          - ubuntu-22.04
+          - self-hosted
+        platform:
+          - amd64
+          - arm64
+        exclude:
+          - builder: ubuntu-22.04
+            platform: arm64
+          - builder: self-hosted
+            platform: amd64
+
+    runs-on:
+      - ${{ matrix.builder }}
+
+    concurrency:
+      group: ${{ matrix.PHP_VERSION }}-${{ matrix.NODE_VERSION }}-${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
+
+      # https://github.com/marketplace/actions/setup-node-js-environment
+      - name: Setup Node Environment
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      # https://github.com/marketplace/actions/dev-container-build-and-run-action
+      - name: Pre-build Dev Container Image
+        uses: devcontainers/ci@v0.3
+        if: matrix.platform == 'amd64'
+        env:
+          # see: https://github.com/devcontainers/ci/issues/191#issuecomment-1603857155
+          BUILDX_NO_DEFAULT_ATTESTATIONS: true
+          PHP_VERSION: ${{ matrix.PHP_VERSION }}
+          NODE_VERSION: ${{ matrix.NODE_VERSION }}
+        with:
+          platform: linux/${{ matrix.platform }}
+          imageName: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          imageTag: php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }},php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-${{ matrix.platform }}
+          push: always
+          skipContainerUserIdUpdate: true
+
+      # https://github.com/marketplace/actions/dev-container-build-and-run-action
+      - name: Pre-build Dev Container Image
+        uses: devcontainers/ci@v0.3
+        if: matrix.platform == 'arm64'
+        env:
+          # see: https://github.com/devcontainers/ci/issues/191#issuecomment-1603857155
+          BUILDX_NO_DEFAULT_ATTESTATIONS: true
+          PHP_VERSION: ${{ matrix.PHP_VERSION }}
+          NODE_VERSION: ${{ matrix.NODE_VERSION }}
+        with:
+          platform: linux/${{ matrix.platform }}
+          imageName: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          imageTag: php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-${{ matrix.platform }}
+          push: always
+          skipContainerUserIdUpdate: true
+
+  upload:
+    name: Upload Images
+    needs: build
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix: 
+        PHP_VERSION:
+          - '8.3'
+          - '8.4'
+        NODE_VERSION:
+          - '24'
+
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ matrix.PHP_VERSION }}-${{ matrix.NODE_VERSION }}
+
+    steps:
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
+
+      # https://github.com/marketplace/actions/docker-metadata-action
+      - name: Docker Metadata
+        uses: docker/metadata-action@v5
+        id: metadata
+        with:
+          tags: type=raw,value=php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}
+
+      - name: Inspect Images
+        run: |
+            docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-amd64
+            docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-arm64
+
+      - name: Create Manifest List and Push
+        run: |
+            docker buildx imagetools create -t ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }} \
+            --append ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-arm64
+
+      - name: Inspect Manifest List
+        run: |
+            docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}
+
+  release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: upload
+
+    steps:
+      # https://github.com/marketplace/actions/semver-conventional-commits
+      - name: Get Versions
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        if: github.event_name == 'push'
+        with:
+          token: ${{ github.token }}
+          branch: main
+
+      - name: Create Release Name
+        id: release-name
+        if: github.event_name == 'push'
+        run: |
+          RELEASE_NAME=$(echo ${{ steps.semver.outputs.nextStrict }} Release)
+          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
+
+      # https://github.com/marketplace/actions/universal-changelog-generator
+      - name: Generate a Changelog
+        id: changelog
+        uses: mrchief/universal-changelog-action@v1.3.2
+        if: github.event_name == 'push'
+        with:
+          previousReleaseTagNameOrSha: ${{ steps.semver.outputs.current }}
+          nextReleaseTagName: 'main'
+          nextReleaseName: ${{ steps.release-name.outputs.RELEASE_NAME }}
+
+      # https://github.com/marketplace/actions/create-release
+      - name: Create Release
+        uses: ncipollo/release-action@v1.20.0
+        if: github.event_name == 'push'
+        with:
+          name: ${{ steps.release-name.outputs.RELEASE_NAME }}
+          tag: ${{ steps.semver.outputs.next }}
+          commit: ${{ github.sha }}
+          body: ${{ steps.changelog.outputs.changelog }}
+

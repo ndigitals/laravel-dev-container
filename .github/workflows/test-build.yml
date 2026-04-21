@@ -1,0 +1,85 @@
+name: Test Builds
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ndigitals
+  PACKAGE: laravel-dev-container
+  ACTION_VERSION: 1
+
+jobs:
+  build:
+    name: Build Images
+
+    strategy:
+      fail-fast: false
+      matrix: 
+        PHP_VERSION:
+          - '8.3'
+          - '8.4'
+        NODE_VERSION:
+          - '24'
+        builder:
+          - ubuntu-22.04
+          - self-hosted
+        platform:
+          - amd64
+          - arm64
+        exclude:
+          - builder: ubuntu-22.04
+            platform: arm64
+          - builder: self-hosted
+            platform: amd64
+
+    runs-on:
+      - ${{ matrix.builder }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+
+      # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
+
+      # https://github.com/marketplace/actions/setup-node-js-environment
+      - name: Setup Node Environment
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      # https://github.com/marketplace/actions/dev-container-build-and-run-action
+      - name: Pre-build Dev Container Image
+        uses: devcontainers/ci@v0.3
+        env:
+          # see: https://github.com/devcontainers/ci/issues/191#issuecomment-1603857155
+          BUILDX_NO_DEFAULT_ATTESTATIONS: true
+          PHP_VERSION: ${{ matrix.PHP_VERSION }}
+          NODE_VERSION: ${{ matrix.NODE_VERSION }}
+        with:
+          platform: linux/${{ matrix.platform }}
+          imageName: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
+          imageTag: php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-${{ matrix.platform }}
+          push: never
+          skipContainerUserIdUpdate: true
+

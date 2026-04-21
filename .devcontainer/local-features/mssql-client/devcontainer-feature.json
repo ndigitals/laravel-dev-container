@@ -1,0 +1,16 @@
+{
+    "Id": "mssql-client",
+    "name": "Install the MSSQl Server client",
+		"dependsOn": {
+			"ghcr.io/jlaundry/devcontainer-features/mssql-odbc-driver:1": {
+				"flag": true
+			}
+		},
+    "installAfter": [
+        "ghcr.io/jlaundry/devcontainer-features/mssql-odbc-driver"
+    ],
+    "install": {
+        "app": "",
+        "file": "install.sh"
+    }
+}
