@@ -2,9 +2,6 @@ name: Build and Publish Images
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}
