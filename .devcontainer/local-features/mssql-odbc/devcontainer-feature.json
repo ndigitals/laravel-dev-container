@@ -1,0 +1,22 @@
+{
+  "Id": "mssql-odbc",
+  "name": "SQL Server ODBC Driver",
+  "options": {
+    "version": {
+      "type": "string",
+      "proposals": [
+        "17",
+        "18"
+      ],
+      "default": "18",
+      "description": "Select or enter an ODBC driver version. Defaults to 18. (available versions may vary by Linux distribution.)"
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils"
+  ],
+  "install": {
+    "app": "",
+    "file": "install.sh"
+  }
+}
