@@ -45,6 +45,15 @@ check_packages() {
         fi
         apt-get -y install --no-install-recommends "$@"
     fi
+
+    if [ ! -d /opt/sqlpackage ]; then
+        echo "Installing sqlpackage"
+        curl -sSfL "https://aka.ms/sqlpackage-linux" 2>/dev/null -o /tmp/sqlpackage.zip || echo "Could not download sqlpackage archive. Skipping."
+        mkdir /opt/sqlpackage
+        unzip /tmp/sqlpackage.zip -d /opt/sqlpackage 
+        rm /tmp/sqlpackage.zip
+        chmod a+x /opt/sqlpackage/sqlpackage
+    fi
 }
 
 export DEBIAN_FRONTEND=noninteractive
@@ -67,6 +76,7 @@ install_using_apt() {
     fi
 
     if ! (ACCEPT_EULA=Y apt-get install -yq ${MSSQL_PKG} python3-dev gcc g++ unixodbc-dev); then
+        ln -s /opt/mssql-tools18 /opt/mssql-tools
         rm -f /etc/apt/sources.list.d/mssql-release.list
         return 1
     fi
