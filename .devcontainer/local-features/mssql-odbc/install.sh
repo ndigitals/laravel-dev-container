@@ -76,9 +76,13 @@ install_using_apt() {
     fi
 
     if ! (ACCEPT_EULA=Y apt-get install -yq ${MSSQL_PKG} python3-dev gcc g++ unixodbc-dev); then
-        ln -s /opt/mssql-tools18 /opt/mssql-tools
         rm -f /etc/apt/sources.list.d/mssql-release.list
         return 1
+    fi
+
+    # Symlink mmsql-tools for backwards compatibility.
+    if [ -d /opt/mssql-tools18 ]; then
+        ln -s /opt/mssql-tools18 /opt/mssql-tools;
     fi
 }
 
