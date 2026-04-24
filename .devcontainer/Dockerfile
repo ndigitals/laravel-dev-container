@@ -34,6 +34,10 @@ RUN set -ex; \
 	\
 	docker-php-ext-install opcache || true; \
 	\
+	docker-php-ext-install sockets;\
+	docker-php-ext-configure sockets; \
+	docker-php-ext-enable sockets; \
+	\
 	docker-php-ext-install gd mysqli zip exif intl mbstring xml xsl; \
 	\
 	curl --location --output /usr/local/bin/pickle https://github.com/FriendsOfPHP/pickle/releases/download/v0.7.11/pickle.phar; \
@@ -58,6 +62,7 @@ RUN set -ex; \
 		}"; \
 	php /tmp/installer.php --no-ansi --install-dir=/usr/bin --2 --filename=composer; \
 	composer --ansi --version --no-interaction; \
+	composer completion bash > /etc/bash_completion.d/composer; \
 	rm -f /tmp/installer.php /tmp/installer.sig;
 
 COPY entrypoint.sh /entrypoint.sh
