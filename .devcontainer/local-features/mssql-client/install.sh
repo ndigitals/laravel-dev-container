@@ -10,9 +10,9 @@ if [ -d /opt/mssql-tools18 ]; then
 	echo "Installing MSSQl Server client..."
 	sudo apt-get update -y --no-install-recommends
 	sudo apt-get install -y --no-install-recommends unixodbc-dev libgssapi-krb5-2;
-	sudo pecl install sqlsrv pdo_sqlsrv;
-	sudo echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/00_sqlsrv.ini
-	sudo echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/10_pdo_sqlsrv.ini
+	sudo pickle install sqlsrv;
+	sudo pickle install pdo_sqlsrv;
+	sudo -E docker-php-ext-enable sqlsrv pdo_sqlsrv;
 fi
 
 echo "Done!"
