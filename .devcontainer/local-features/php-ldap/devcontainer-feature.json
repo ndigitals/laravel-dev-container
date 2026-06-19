@@ -1,0 +1,8 @@
+{
+	"id": "php-ldap",
+	"version": "1.0.0",
+	"name": "Install PHP LDAP Extension",
+	"installsAfter": [
+		"ghcr.io/devcontainers/features/common-utils"
+	]
+}
