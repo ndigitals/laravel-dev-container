@@ -175,15 +175,24 @@ jobs:
           noNewCommitBehavior: current
           noVersionBumpBehavior: patch
 
+      - name: Skip release when version is unchanged
+        if: steps.semver.outputs.next == steps.semver.outputs.current
+        run: |
+          echo "No release will be created because the generated next version '${{ steps.semver.outputs.next }}' matches the current release '${{ steps.semver.outputs.current }}'."
+
       - name: Create Release Name
         id: release-name
+        # Only run if the next version is different from the current version.
+        if: steps.semver.outputs.next != steps.semver.outputs.current
         run: |
-          RELEASE_NAME=$(echo ${{ steps.semver.outputs.nextStrict }} Release)
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          RELEASE_NAME="${{ steps.semver.outputs.nextStrict }} Release"
+          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
 
       # https://github.com/marketplace/actions/universal-changelog-generator
       - name: Generate a Changelog
         id: changelog
+        # Only run if the next version is different from the current version.
+        if: steps.semver.outputs.next != steps.semver.outputs.current
         uses: mrchief/universal-changelog-action@v1.3.2
         with:
           previousReleaseTagNameOrSha: ${{ steps.semver.outputs.current }}
@@ -193,9 +202,12 @@ jobs:
       # https://github.com/marketplace/actions/create-release
       - name: Create Release
         uses: ncipollo/release-action@v1.21.0
+        # Only run if the next version is different from the current version.
+        if: steps.semver.outputs.next != steps.semver.outputs.current
         with:
           name: ${{ steps.release-name.outputs.RELEASE_NAME }}
           tag: ${{ steps.semver.outputs.next }}
           commit: ${{ github.sha }}
           body: ${{ steps.changelog.outputs.changelog }}
+          makeLatest: true
 
