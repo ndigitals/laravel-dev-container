@@ -508,7 +508,7 @@ error_reporting = E_ALL
 ; Development Value: On
 ; Production Value: Off
 ; http://php.net/display-errors
-display_errors = On
+display_errors = stderr
 
 ; The display of errors which occur during PHP's startup sequence are handled
 ; separately from display_errors. We strongly recommend you set this to 'off'
@@ -1488,7 +1488,10 @@ session.use_trans_sid = 0
 ; Default Value: 32
 ; Development Value: 26
 ; Production Value: 26
-session.sid_length = 26
+; Deprecated and ignored (fixed at 32) as of PHP 8.4, and setting it emits a
+; "PHP Startup" deprecation notice on every CLI invocation across every
+; PHP version this image supports, so it's left commented out here.
+;session.sid_length = 26
 
 ; The URL rewriter will look for URLs in a defined set of HTML tags.
 ; <form> is special; if you include them here, the rewriter will
@@ -1525,7 +1528,10 @@ session.trans_sid_tags = "a=href,area=href,frame=src,form="
 ; Development Value: 5
 ; Production Value: 5
 ; http://php.net/session.hash-bits-per-character
-session.sid_bits_per_character = 5
+; Deprecated and ignored (fixed at 4) as of PHP 8.4, and setting it emits a
+; "PHP Startup" deprecation notice on every CLI invocation across every
+; PHP version this image supports, so it's left commented out here.
+;session.sid_bits_per_character = 5
 
 ; Enable upload progress tracking in $_SESSION
 ; Default Value: On

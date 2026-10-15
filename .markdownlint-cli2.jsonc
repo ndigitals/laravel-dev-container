@@ -1,0 +1,11 @@
+{
+  // markdownlint-cli2 configuration for this repo's Markdown documentation.
+  "config": {
+    "default": true,
+    // README/docs contain long badge and reference links on a single line.
+    "MD013": false
+  },
+  "globs": [
+    "**/*.md"
+  ]
+}

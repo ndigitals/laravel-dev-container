@@ -30,8 +30,9 @@ get_common_setting() {
     if [ -f "/tmp/vsdc-settings.env" ]; then
         local multi_line=""
         if [ "$2" = "true" ]; then multi_line="-z"; fi
-        local result="$(grep ${multi_line} -oP "$1=\"?\K[^\"]+" /tmp/vsdc-settings.env | tr -d '\0')"
-        if [ ! -z "${result}" ]; then declare -g $1="${result}"; fi
+        local result
+        result="$(grep ${multi_line} -oP "$1=\"?\K[^\"]+" /tmp/vsdc-settings.env | tr -d '\0')"
+        if [ -n "${result}" ]; then declare -g "$1"="${result}"; fi
     fi
     echo "$1=${!1}"
 }
@@ -63,19 +64,19 @@ install_using_apt() {
     check_packages apt-transport-https curl ca-certificates gnupg2 dirmngr
     # Import key safely (new 'signed-by' method rather than deprecated apt-key approach) and install
     #get_common_setting MICROSOFT_GPG_KEYS_URI
-    curl -sSL ${MICROSOFT_GPG_KEYS_URI} | gpg --dearmor | sudo tee /usr/share/keyrings/microsoft-prod.gpg > /dev/null
+    curl -sSL "${MICROSOFT_GPG_KEYS_URI}" | gpg --dearmor | sudo tee /usr/share/keyrings/microsoft-prod.gpg > /dev/null
     chmod o+r /usr/share/keyrings/microsoft-prod.gpg
 
     echo "deb [arch=${architecture} signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/$ID/$VERSION_ID/prod ${VERSION_CODENAME} main" > /etc/apt/sources.list.d/mssql-release.list
     apt-get update
 
-    if [ $ODBC_VERSION -eq "18" ]; then
-        MSSQL_PKG="msodbcsql${ODBC_VERSION} mssql-tools18"
+    if [ "$ODBC_VERSION" -eq "18" ]; then
+        MSSQL_PKG=("msodbcsql${ODBC_VERSION}" "mssql-tools18")
     else
-        MSSQL_PKG="msodbcsql${ODBC_VERSION} mssql-tools"
+        MSSQL_PKG=("msodbcsql${ODBC_VERSION}" "mssql-tools")
     fi
 
-    if ! (ACCEPT_EULA=Y apt-get install -yq ${MSSQL_PKG} python3-dev gcc g++ unixodbc-dev); then
+    if ! (ACCEPT_EULA=Y apt-get install -yq "${MSSQL_PKG[@]}" python3-dev gcc g++ unixodbc-dev); then
         rm -f /etc/apt/sources.list.d/mssql-release.list
         return 1
     fi
@@ -87,6 +88,7 @@ install_using_apt() {
 }
 
 echo "(*) Installing SQL Server ODBC Driver..."
+# shellcheck source=/dev/null
 . /etc/os-release
 architecture="$(dpkg --print-architecture)"
 

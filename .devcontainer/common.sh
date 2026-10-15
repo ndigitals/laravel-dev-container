@@ -24,10 +24,10 @@ export PATH="$PATH:/opt/mssql-tools18/bin"
 LARAVEL_PHP_UID="${PHP_FPM_UID-1000}"
 LARAVEL_PHP_GID="${PHP_FPM_GID-1000}"
 
-if [ "$LARAVEL_PHP_UID" != "`id -u laravel_php`" ]; then
+if [ "$LARAVEL_PHP_UID" != "$(id -u laravel_php)" ]; then
 	usermod -o -u "${LARAVEL_PHP_UID}" "laravel_php"
 fi
 
-if [ "$LARAVEL_PHP_GID" != "`id -g laravel_php`" ]; then
+if [ "$LARAVEL_PHP_GID" != "$(id -g laravel_php)" ]; then
 	groupmod -o -g "${LARAVEL_PHP_GID}" "laravel_php"
 fi

@@ -1,0 +1,29 @@
+name: Validate Workflows
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Run on pull requests to ensure code adheres to coding standards before merging
+  pull_request:
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  lint:
+    name: Lint GitHub Actions
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v7
+
+      - name: Run Actionlint
+        # https://github.com/marketplace/actions/actionlint-with-reviewdog
+        uses: reviewdog/action-actionlint/dockerless@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review  # Posts errors directly as comments on the PR lines

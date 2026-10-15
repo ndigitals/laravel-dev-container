@@ -17,11 +17,11 @@ env:
 
 jobs:
   build:
-    name: Build Images
+    name: Build & Verify Images
 
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         PHP_VERSION:
           - '8.3'
           - '8.4'
@@ -46,7 +46,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+          fetch-depth: 0  # Required due to the way Git works, without it this action won't be able to find any or the correct tags
 
       # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Set up Docker Buildx
@@ -68,7 +68,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       # https://github.com/marketplace/actions/dev-container-build-and-run-action
-      - name: Pre-build Dev Container Image
+      - name: Build Dev Container Image
         uses: devcontainers/ci@v0.3
         env:
           # see: https://github.com/devcontainers/ci/issues/191#issuecomment-1603857155
@@ -77,9 +77,32 @@ jobs:
           NODE_VERSION: ${{ matrix.NODE_VERSION }}
         with:
           platform: linux/${{ matrix.platform }}
+          # Each matrix leg already runs on a runner native to its own
+          # platform (ubuntu-22.04/amd64, self-hosted/arm64), so there's no
+          # emulation/multi-arch merge happening here. `useNativeRunner`
+          # tells devcontainers/ci to build via a plain `devcontainer build`
+          # (no `--output=type=oci` tarball) and load the result straight
+          # into the runner's own Docker daemon, which sidesteps an entire
+          # class of OCI-archive export/import bugs (skopeo copy pipe
+          # errors, `docker load` failing with "blobs/json: no such file or
+          # directory") seen when forcing the tarball-based path instead.
+          # See: https://github.com/devcontainers/ci/blob/main/docs/multi-platform-builds.md#native-multi-platform-builds-matrix-strategy
+          useNativeRunner: true
           imageName: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
           cacheFrom: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}
-          imageTag: php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-${{ matrix.platform }}
+          imageTag: php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}
           push: never
           skipContainerUserIdUpdate: true
 
+      # We deliberately avoid devcontainers/ci's own "up"/runCmd mechanism
+      # for verification: it bind-mounts the runner's checkout folder into
+      # the container, which fails on the self-hosted arm64 runner (its
+      # Docker daemon can't see the runner process's filesystem paths).
+      # Piping the script over stdin to `docker run` needs no bind mount at
+      # all, so it works identically on every runner/platform.
+      - name: Verify Dev Container Image
+        run: |
+          docker run --rm -i \
+            "${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.PACKAGE }}:php-${{ matrix.PHP_VERSION }}-node-${{ matrix.NODE_VERSION }}-linux-${{ matrix.platform }}" \
+            bash -s -- "${{ matrix.PHP_VERSION }}" "${{ matrix.NODE_VERSION }}" \
+            < .github/scripts/verify-image.sh
