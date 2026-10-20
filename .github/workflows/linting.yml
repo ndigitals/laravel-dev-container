@@ -1,0 +1,66 @@
+name: Linting
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Run on pull requests to ensure code adheres to coding standards before merging
+  pull_request:
+
+jobs:
+  yamllint:
+    name: Check YAML
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v7
+
+      - name: Install yamllint
+        run: sudo apt-get install -y yamllint
+
+      - name: Run yamllint
+        run: |
+          yamllint .
+
+  shellcheck:
+    name: Check Shell Scripts
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v7
+
+      - name: Run ShellCheck
+        # https://github.com/marketplace/actions/shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+
+  devcontainer-json:
+    name: Check Dev Container Configuration
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node Environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Validate devcontainer.json schema & feature references
+        run: |
+          npx --yes @devcontainers/cli@latest read-configuration --workspace-folder .
+
+      - name: Validate local feature definitions
+        run: |
+          for feature in .devcontainer/local-features/*/; do
+            echo "Validating ${feature}devcontainer-feature.json"
+            jq empty "${feature}devcontainer-feature.json"
+          done

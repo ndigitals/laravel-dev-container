@@ -3,7 +3,6 @@
 set -eux
 
 export DEBIAN_FRONTEND=noninteractive
-PHP_VERSION=$(php -v | head -n 1 | cut -d " " -f 2);
 
 # Install the MSSQl Server client.
 if [ -d /opt/mssql-tools18 ]; then

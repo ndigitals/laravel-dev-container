@@ -24,7 +24,7 @@ RUN set -ex; \
 	\
 	apt-get update; \
 	\
-	apt-get install -y --no-install-recommends libjpeg-dev libpng-dev libwebp-dev libzip-dev libssl-dev libmemcached-dev unzip libmagickwand-dev ghostscript libonig-dev locales sudo rsync libxslt-dev git gpg; \
+	apt-get install -y --no-install-recommends libjpeg-dev libpng-dev libwebp-dev libzip-dev libssl-dev libmemcached-dev unzip libmagickwand-dev ghostscript libonig-dev locales sudo rsync libxslt-dev libpq-dev git gpg; \
 	apt-get upgrade openssl -y; \
 	update-ca-certificates --fresh; \
 	sed -i 's/^# *\(\(ru_RU\|fr_FR\|de_DE\|es_ES\|ja_JP\).UTF-8\)/\1/' /etc/locale.gen; \
@@ -38,7 +38,7 @@ RUN set -ex; \
 	docker-php-ext-configure sockets; \
 	docker-php-ext-enable sockets; \
 	\
-	docker-php-ext-install gd mysqli zip exif intl mbstring xml xsl; \
+	docker-php-ext-install gd mysqli pdo_mysql zip exif intl mbstring xml xsl pdo_pgsql pgsql; \
 	\
 	curl --location --output /usr/local/bin/pickle https://github.com/FriendsOfPHP/pickle/releases/download/v0.7.11/pickle.phar; \
 	chmod +x /usr/local/bin/pickle; \

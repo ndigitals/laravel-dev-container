@@ -1,0 +1,15 @@
+# yamllint configuration for this repo
+extends: default
+
+rules:
+  # Workflow/feature YAML occasionally has long URLs in comments.
+  line-length: disable
+
+  truthy:
+    check-keys: false
+
+  # Document start (---) is not used by this repo's YAML files.
+  document-start: disable
+
+ignore: |
+  .git/
